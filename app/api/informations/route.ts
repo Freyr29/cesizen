@@ -1,4 +1,4 @@
-import { NextApiRequest } from "next";
+import { NextRequest } from "next/server";
 import mysql from "mysql2";
 import { NextResponse } from "next/server";
 
@@ -11,7 +11,7 @@ const pool = mysql.createPool({
 });
 
 // Récupérer tous les articles actifs
-export async function GET(req: NextApiRequest) {
+export async function GET(req: NextRequest) {
   return new Promise((resolve, reject) => {
     pool.query("SELECT * FROM informations WHERE active = 1", (err, results) => {
       if (err) {

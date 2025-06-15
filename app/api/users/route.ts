@@ -1,4 +1,4 @@
-import { NextApiRequest } from "next";
+import { NextRequest } from "next/server";
 import mysql from "mysql2";
 import { NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ const pool = mysql.createPool({
 export const dynamic = "force-dynamic";
 
 // Récupérer tous les utilisateurs
-export async function GET(req: NextApiRequest) {
+export async function GET(req: NextRequest) {
   return new Promise((resolve) => {
     pool.query("SELECT * FROM users WHERE active = 1", (err, results) => {
       if (err) {
