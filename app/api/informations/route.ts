@@ -1,6 +1,5 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import mysql from "mysql2";
-import { NextResponse } from "next/server";
 
 const pool = mysql.createPool({
   connectionLimit: 10,
@@ -11,84 +10,85 @@ const pool = mysql.createPool({
 });
 
 // Récupérer tous les articles actifs
-export async function GET(req: NextRequest) {
-  return new Promise((resolve, reject) => {
-    pool.query("SELECT * FROM informations WHERE active = 1", (err, results) => {
-      if (err) {
-        console.error("Erreur SQL :", err);
-        return reject(NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 }));
-      }
-      resolve(NextResponse.json(results));
-    });
-  });
+export async function GET(req: NextRequest): Promise<Response> {
+  try {
+    const [results] = await pool.promise().query("SELECT * FROM informations WHERE active = 1");
+    return NextResponse.json(results);
+  } catch (err) {
+    console.error("Erreur SQL :", err);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur", details: err },
+      { status: 500 }
+    );
+  }
 }
+
 
 // Ajouter un nouvel article
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   const { title, description, url, source, category } = await req.json();
 
-  return new Promise((resolve, reject) => {
-    pool.query(
-      "INSERT INTO informations (title, description, url, source, category, active) VALUES (?, ?, ?, ?, ?, 1)", // active est mis à 1 par défaut
-      [title, description, url, source, category],
-      (err, results: mysql.ResultSetHeader) => { // Utilisation du type ResultSetHeader
-        if (err) {
-          console.error("Erreur lors de l'ajout de l'article :", err);
-          return reject(NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 }));
-        }
-
-        // Utilisation correcte de insertId avec ResultSetHeader
-        const insertId = results.insertId;
-        resolve(NextResponse.json({ message: "Article ajouté avec succès", id: insertId }, { status: 201 }));
-      }
+  try {
+    const [results] = await pool.promise().query(
+      "INSERT INTO informations (title, description, url, source, category, active) VALUES (?, ?, ?, ?, ?, 1)",
+      [title, description, url, source, category]
     );
-  });
+
+    const insertId = (results as mysql.ResultSetHeader).insertId;
+
+    return NextResponse.json({ message: "Article ajouté avec succès", id: insertId }, { status: 201 });
+  } catch (err) {
+    console.error("Erreur lors de l'ajout de l'article :", err);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur", details: err },
+      { status: 500 }
+    );
+  }
 }
+
 
 // Mettre à jour un article
-export async function PUT(req: Request) {
+export async function PUT(req: Request): Promise<Response> {
   const { id, title, description, url, source, category } = await req.json();
 
-  return new Promise((resolve, reject) => {
-    pool.query(
+  try {
+    await pool.promise().query(
       "UPDATE informations SET title = ?, description = ?, url = ?, source = ?, category = ? WHERE id = ?",
-      [title, description, url, source, category, id],
-      (err) => {
-        if (err) {
-          console.error("Erreur lors de la mise à jour de l'article :", err);
-          return reject(
-            NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 })
-          );
-        }
-        resolve(NextResponse.json({ message: "Article mis à jour avec succès" }, { status: 200 }));
-      }
+      [title, description, url, source, category, id]
     );
-  });
+
+    return NextResponse.json({ message: "Article mis à jour avec succès" }, { status: 200 });
+  } catch (err) {
+    console.error("Erreur lors de la mise à jour de l'article :", err);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur", details: err },
+      { status: 500 }
+    );
+  }
 }
 
+
 // Supprimer un article (désactivation)
-export async function DELETE(req: Request) {
-  const { searchParams } = new URL(req.url);  // récupère les params de l'URL
+export async function DELETE(req: Request): Promise<Response> {
+  const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
   if (!id) {
     return NextResponse.json({ error: "ID manquant" }, { status: 400 });
   }
 
-  return new Promise((resolve) => {
-    // Désactiver l'article en mettant `active` à 0
-    pool.query(
+  try {
+    await pool.promise().query(
       "UPDATE informations SET active = 0 WHERE id = ?",
-      [id],
-      (err) => {
-        if (err) {
-          console.error("ERREUR SQL :", err);
-          return resolve(
-            NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 })
-          );
-        }
-        resolve(NextResponse.json({ message: "Article désactivé" }));
-      }
+      [id]
     );
-  });
+
+    return NextResponse.json({ message: "Article désactivé" }, { status: 200 });
+  } catch (err) {
+    console.error("Erreur SQL :", err);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur", details: err },
+      { status: 500 }
+    );
+  }
 }

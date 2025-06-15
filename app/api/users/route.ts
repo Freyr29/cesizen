@@ -1,6 +1,5 @@
-import { NextRequest } from "next/server";
-import mysql from "mysql2";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import mysql from "mysql2/promise"; // Utilise la version `promise` ici
 
 const pool = mysql.createPool({
   connectionLimit: 10,
@@ -13,75 +12,61 @@ const pool = mysql.createPool({
 export const dynamic = "force-dynamic";
 
 // Récupérer tous les utilisateurs
-export async function GET(req: NextRequest) {
-  return new Promise((resolve) => {
-    pool.query("SELECT * FROM users WHERE active = 1", (err, results) => {
-      if (err) {
-        console.error("ERREUR SQL :", err);
-        return resolve(
-          NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 })
-        );
-      }
-      resolve(NextResponse.json(results));
-    });
-  });
+export async function GET(req: NextRequest): Promise<Response> {
+  try {
+    const [results] = await pool.query("SELECT * FROM users WHERE active = 1");
+    return NextResponse.json(results);
+  } catch (err) {
+    console.error("ERREUR SQL :", err);
+    return NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 });
+  }
 }
 
 // Ajouter un nouvel utilisateur
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   const { nom, mail, password, role, active } = await req.json();
 
-  return new Promise((resolve) => {
-    pool.query(
-      "INSERT INTO activities (id, nom, mail, password, role, active) VALUES (NULL, ?, ?, ?, ?, 1)",
-      [nom, mail, password, role, active],
-      (err, results) => {
-        if (err) {
-          console.error("ERREUR SQL :", err);
-          return resolve(
-            NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 })
-          );
-        }
-
-        // Typage explicite du résultat pour inclure insertId
-        const result = results as mysql.ResultSetHeader;  // Typage du résultat pour récupérer insertId
-
-        // Réponse incluant id: null pour maintenir la structure attendue
-        resolve(NextResponse.json({
-          id: null,  // On retourne null pour id
-          nom,
-          mail,
-          password,
-          role,
-          active,
-        }));
-      }
+  try {
+    const [results] = await pool.query(
+      "INSERT INTO users (nom, mail, password, role, active) VALUES (?, ?, ?, ?, ?)",
+      [nom, mail, password, role, active]
     );
-  });
+
+    const insertId = (results as mysql.ResultSetHeader).insertId;
+
+    return NextResponse.json({
+      id: insertId,
+      nom,
+      mail,
+      password,
+      role,
+      active,
+    }, { status: 201 });
+  } catch (err) {
+    console.error("Erreur SQL :", err);
+    return NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 });
+  }
 }
 
 // Modifier un utilisateur
-export async function PUT(req: Request) {
-  const body = await req.json();
+export async function PUT(req: Request): Promise<Response> {
   const { id, nom, mail, role } = await req.json();
 
-  return new Promise((resolve, reject) => {
-    pool.query(
+  try {
+    await pool.query(
       "UPDATE users SET nom = ?, mail = ?, role = ? WHERE id = ?",
-      [nom, mail, role, id],
-      (err) => {
-        if (err) {
-          console.error("Erreur lors de la mise à jour de l'utilisateur :", err);
-          return reject(NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 }));
-        }
-        resolve(NextResponse.json({ id, nom, mail, role }));
-      }
+      [nom, mail, role, id]
     );
-  });
+
+    return NextResponse.json({ id, nom, mail, role }, { status: 200 });
+  } catch (err) {
+    console.error("Erreur lors de la mise à jour de l'utilisateur :", err);
+    return NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 });
+  }
 }
 
-// Supprimer un utilisateur
-export async function DELETE(req: Request) {
+// Supprimer (désactiver) un utilisateur
+export async function DELETE(req: Request): Promise<Response> {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
@@ -89,20 +74,15 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "ID manquant" }, { status: 400 });
   }
 
-  return new Promise((resolve) => {
-    pool.query(
-        "UPDATE users SET active = 0 WHERE id = ?",
-
-      [id],
-      (err) => {
-        if (err) {
-          console.error("Erreur lors de la suppression de l'utilisateur :", err);
-          return resolve(
-            NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 })
-          );
-        }
-        resolve(NextResponse.json({ message: "Utilisateur désactivé avec succès" }));
-      }
+  try {
+    await pool.query(
+      "UPDATE users SET active = 0 WHERE id = ?",
+      [id]
     );
-  });
+
+    return NextResponse.json({ message: "Utilisateur désactivé avec succès" }, { status: 200 });
+  } catch (err) {
+    console.error("Erreur lors de la suppression de l'utilisateur :", err);
+    return NextResponse.json({ error: "Erreur interne du serveur", details: err }, { status: 500 });
+  }
 }
