@@ -95,7 +95,7 @@ export async function DELETE(req: Request) {
   }
 
   return new Promise((resolve) => {
-    // Mettre à jour le champ `active` à 0 au lieu de supprimer l'activité
+    // Mettre à jour le champ active à 0 au lieu de supprimer l'activité
     pool.query(
       "UPDATE activities SET active = 0 WHERE id = ?",
       [id],

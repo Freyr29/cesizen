@@ -36,8 +36,6 @@ export function ProfileModal() {
       return;
     }
 
-    console.log("Token envoyé avec la requête:", sessionToken); // Log pour vérifier le token
-
     const res = await fetch("/api/auth/session", { // Appel à l'API pour récupérer la session
       method: "GET",
       headers: {
@@ -46,14 +44,12 @@ export function ProfileModal() {
       },
     });
 
-    console.log("Statut de la réponse:", res.status); // Log du statut de la réponse
     if (res.ok) {
       const data = await res.json();
-      console.log("Réponse de l'API :", data); // Log de la réponse pour s'assurer qu'on reçoit bien les données
       setUserProfile(data.session.user); // Supposons que l'API retourne les informations de l'utilisateur
     } else {
       const data = await res.json();
-      console.error("Erreur lors de la récupération de la session:", data); // Log des erreurs du serveur
+      console.error("Erreur lors de la récupération de la session"); // Log des erreurs du serveur
       setErrorMessage(data.error || "Impossible de récupérer les informations de l'utilisateur");
     }
   };

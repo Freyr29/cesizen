@@ -22,7 +22,6 @@ export function AuthModal({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   // Connexion de l'utilisateur
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); // Empêcher la soumission par défaut du formulaire
-    console.log("Données envoyées pour la connexion:", { mail: email, password });
   
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -34,7 +33,6 @@ export function AuthModal({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   
     if (res.ok) {
       const data = await res.json();
-      console.log("Connexion réussie, token de session:", data.sessionToken);
       localStorage.setItem("sessionToken", data.sessionToken); // Stocker le token de session
       setOpen(false); // Fermer la modal après la connexion
       onLoginSuccess(); // Mettre à jour l'état de connexion dans Navbar

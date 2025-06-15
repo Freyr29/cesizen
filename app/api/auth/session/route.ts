@@ -34,11 +34,9 @@ export const getSession = (sessionToken: string): Promise<Session> => {
           return reject(err);
         }
         if (results.length === 0) {
-          console.log("Aucune session trouvée pour le token:", sessionToken);
           return reject('Session invalide ou expirée');
         }
         const session = results[0] as Session;
-        console.log("Session trouvée:", session);
         resolve(session);
       }
     );
@@ -60,7 +58,6 @@ const getUserById = (userId: string): Promise<User> => {
           return reject('Utilisateur non trouvé');
         }
         const user = results[0] as User;
-        console.log("Utilisateur récupéré:", user);
         resolve(user);
       }
     );
@@ -77,11 +74,8 @@ export async function GET(req: Request) {
     }
 
     const sessionToken = authHeader.split(" ")[1];
-    console.log("Token reçu dans l'en-tête:", sessionToken);
 
     const session = await getSession(sessionToken); // Récupérer la session
-
-    console.log("Session récupérée:", session);
 
     if (session.expireAt < Date.now()) {
       return new Response(JSON.stringify({ error: "Session expirée" }), { status: 401 });
