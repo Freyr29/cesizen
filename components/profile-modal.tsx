@@ -19,14 +19,14 @@ export function ProfileModal() {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Vérifier si l'utilisateur est connecté (token de session dans localStorage)
-  const checkUserSession = () => {
-    const sessionToken = localStorage.getItem("sessionToken");
-    if (!sessionToken) {
-      setErrorMessage("Veuillez vous connecter pour voir votre profil");
-      return false; // Pas connecté
-    }
-    return true; // Utilisateur connecté
-  };
+  // const checkUserSession = () => {
+  //   const sessionToken = localStorage.getItem("sessionToken");
+  //   if (!sessionToken) {
+  //     setErrorMessage("Veuillez vous connecter pour voir votre profil");
+  //     return false; // Pas connecté
+  //   }
+  //   return true; // Utilisateur connecté
+  // };
 
   // Récupérer les informations de l'utilisateur via l'API
   const fetchUserProfile = async () => {
@@ -36,13 +36,7 @@ export function ProfileModal() {
       return;
     }
 
-    const res = await fetch("/api/auth/session", { // Appel à l'API pour récupérer la session
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${sessionToken}`, // En-tête avec le token de session
-      },
-    });
+    const res = await fetch("/api/auth/session");
 
     if (res.ok) {
       const data = await res.json();
@@ -77,12 +71,11 @@ export function ProfileModal() {
     }
   };
 
-  // Ne récupérer les informations de l'utilisateur que si l'utilisateur est connecté
   useEffect(() => {
-    if (checkUserSession()) {
-      fetchUserProfile(); // Récupérer les infos de l'utilisateur seulement si connecté
+    if (open) {
+      fetchUserProfile();
     }
-  }, [open]); // Appel au changement de l'état de la modal
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -99,9 +99,11 @@ export default function UsersAdminPage() {
   const UserForm = ({
     user,
     onSave,
+    isEditing
   }: {
     user: Partial<User>;
     onSave: (user: Partial<User>) => void;
+    isEditing: boolean;
   }) => {
     const [formData, setFormData] = useState(user);
 
@@ -111,6 +113,7 @@ export default function UsersAdminPage() {
 
     return (
       <div className="space-y-4">
+        {/* champ mail */}
         <div className="space-y-2">
           <Label htmlFor="mail">mail</Label>
           <Input
@@ -121,6 +124,7 @@ export default function UsersAdminPage() {
           />
         </div>
 
+        {/* champ nom */}
         <div className="space-y-2">
           <Label htmlFor="nom">Nom</Label>
           <Input
@@ -130,6 +134,7 @@ export default function UsersAdminPage() {
           />
         </div>
 
+        {/* champ rôle */}
         <div className="space-y-2">
           <Label htmlFor="role">Rôle</Label>
           <Select
@@ -149,15 +154,18 @@ export default function UsersAdminPage() {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Mot de passe</Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password || ""}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          />
-        </div>
+        {/* champ mot de passe seulement si pas en mode édition */}
+        {!isEditing && (
+          <div className="space-y-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password || ""}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+        )}
 
         <Button className="w-full" onClick={() => onSave(formData)}>
           {user.id ? "Mettre à jour" : "Ajouter"}
@@ -165,6 +173,7 @@ export default function UsersAdminPage() {
       </div>
     );
   };
+
 
   return (
     <main className="w-full min-h-[calc(100vh-4rem)] py-8 px-4">
@@ -184,7 +193,7 @@ export default function UsersAdminPage() {
                   Remplissez les informations pour créer un nouvel utilisateur.
                 </DialogDescription>
               </DialogHeader>
-              <UserForm user={newUser} onSave={handleSave} />
+              <UserForm user={newUser} onSave={handleSave} isEditing={false} />
             </DialogContent>
           </Dialog>
         </div>
@@ -212,7 +221,7 @@ export default function UsersAdminPage() {
                             Modifiez les informations de l'utilisateur.
                           </DialogDescription>
                         </DialogHeader>
-                        <UserForm user={user} onSave={handleSave} />
+                        <UserForm user={user} onSave={handleSave} isEditing={true} />
                       </DialogContent>
                     </Dialog>
                     <Button

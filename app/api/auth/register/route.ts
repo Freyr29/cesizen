@@ -1,15 +1,39 @@
-import { createUser } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { createSession, pool } from '@/lib/auth';
 
-// Route API pour la création d'un utilisateur
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { nom, mail, password, role } = await req.json();
-    await createUser(nom, mail, password, role); // Cette fonction vérifie maintenant l'email
-    return new Response(JSON.stringify({ message: "Utilisateur créé avec succès" }), { status: 201 });
+    const { nom, mail, password } = await req.json();
+
+    // Hachage du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insertion dans la base
+    const [result]: any = await pool.promise().query(
+      'INSERT INTO users (nom, mail, password, role, active) VALUES (?, ?, ?, ?, ?)',
+      [nom, mail, hashedPassword, 'user', 1]
+    );
+
+    const userId = result.insertId;
+
+    // Création de la session automatiquement
+    const sessionToken = await createSession(userId);
+
+    // Envoi du cookie avec le token
+    const response = NextResponse.json({ message: 'Compte créé et utilisateur connecté', userId });
+    response.cookies.set('sessionToken', sessionToken, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 3600, // 1 heure
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    return response;
+
   } catch (error) {
-    if (error === "L'email est déjà utilisé") {
-      return new Response(JSON.stringify({ error: "L'email est déjà utilisé" }), { status: 400 }); // Erreur 400 pour email déjà pris
-    }
-    return new Response(JSON.stringify({ error: "Erreur lors de la création de l'utilisateur" }), { status: 500 });
+    console.error('Erreur lors de l’inscription :', error);
+    return NextResponse.json({ error: 'Erreur lors de la création du compte' }, { status: 500 });
   }
 }

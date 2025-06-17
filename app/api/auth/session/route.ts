@@ -1,25 +1,22 @@
 import { getSession, getUserById } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
-// Route API pour récupérer la session et les informations de l'utilisateur
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("Token manquant ou mal formé dans l'en-tête Authorization");
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('sessionToken')?.value;
+
+    if (!sessionToken) {
+      console.log("Aucun cookie de session trouvé");
       return new Response(JSON.stringify({ error: "Token de session manquant" }), { status: 401 });
     }
 
-    const sessionToken = authHeader.split(" ")[1];
-
-    const session = await getSession(sessionToken); // Récupérer la session
-
+    const session = await getSession(sessionToken);
     if (session.expireAt < Date.now()) {
       return new Response(JSON.stringify({ error: "Session expirée" }), { status: 401 });
     }
 
-    // Récupérer les informations de l'utilisateur à partir du userId de la session
-    const user = await getUserById(session.userId);  // Utilise l'userId de la session pour récupérer les infos de l'utilisateur
-
+    const user = await getUserById(session.userId);
     return new Response(JSON.stringify({ session: { user } }), { status: 200 });
 
   } catch (error) {
@@ -27,3 +24,5 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "Session invalide ou expirée" }), { status: 401 });
   }
 }
+
+
