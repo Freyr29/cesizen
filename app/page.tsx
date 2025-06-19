@@ -19,7 +19,7 @@ export default function Home() {
         Bienvenue sur CESIZen
       </h1>
       <p className="text-xl text-center text-muted-foreground max-w-[600px] mb-12">
-        Votre compagnon pour la gestion du stress et l'amélioration de votre bien-être au quotidien.
+        Bonjour
       </p>
       <div className="flex gap-4">
         <Button asChild size="lg" variant="outline">
